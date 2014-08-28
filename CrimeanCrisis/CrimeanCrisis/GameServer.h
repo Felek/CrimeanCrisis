@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <WinSock2.h>
 #include <thread>
+#include <list>
 
 class GameServer
 {
@@ -16,5 +17,7 @@ public:
 
 private:
 	SOCKET mainSocket;
+	std::list<SOCKET> _socketList;
+	std::list<int> _id_list;
 };
 

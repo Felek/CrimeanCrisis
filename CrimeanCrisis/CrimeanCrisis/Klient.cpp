@@ -1,8 +1,11 @@
-#include "Klient.h"
 #include <thread>
+#include "Klient.h"
 
-Klient::Klient()
+
+Klient::Klient(std::list<GraphicObject>* objList)
 {
+	_objList = objList;
+	_client_id = 0;
 }
 
 
@@ -48,14 +51,53 @@ int Klient::Start()
 		return 1;
 	}
 
-	int bytesSent;
 	int bytesRecv = SOCKET_ERROR;
-	char sendbuf[32] = "Client says hello!";
 	char recvbuf[32] = "";
+
+	Init();
+
+	while (Interpret(Receive()));
+
+	//system("pause");
+
+	return 0;
+}
+
+
+void Klient::SendInit() 
+{
+	int bytesSent;
+	char sendbuf[32] = "INIT_ME";
 
 	bytesSent = send(mainSocket, sendbuf, strlen(sendbuf), 0);
 	printf("Bytes sent: %ld ---> KLIENT\n", bytesSent);
+}
 
+void Klient::Init()
+{
+	SendInit();
+	char *message, *pch;
+	message = Receive();
+
+	pch = strtok(message, " ");
+	while (pch != NULL)
+	{
+		if (pch == "INIT_YOU")
+		{
+			printf("%s\n", pch);
+			pch = strtok(NULL, " ");
+			_client_id = (int)strtol(pch, NULL, 10); //pch - '0' ???
+			break;
+		}
+		printf("%d\n", _client_id);
+		pch = strtok(NULL, " ");
+	}
+}
+
+char* Klient::Receive()
+{
+	int bytesRecv = SOCKET_ERROR;
+	char recvbuf[32] = "";
 	while (bytesRecv == SOCKET_ERROR)
 	{
 		bytesRecv = recv(mainSocket, recvbuf, 32, 0);
@@ -66,14 +108,16 @@ int Klient::Start()
 			break;
 		}
 
-		if (bytesRecv < 0)
-			return 1;
+	//	if (bytesRecv < 0)
+	//		return NULL;
 
-		printf("Bytes received: %ld ---> KLIENT\n", bytesRecv);
 		printf("Received text: %s ---> KLIENT\n", recvbuf);
+
+		return recvbuf;
 	}
+}
 
-	system("pause");
+bool Klient::Interpret(char* message)
+{
 
-	return 0;
 }
