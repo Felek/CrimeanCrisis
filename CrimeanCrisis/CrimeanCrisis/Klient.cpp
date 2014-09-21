@@ -1,8 +1,22 @@
 #include "Klient.h"
 #include <thread>
 
-Klient::Klient()
+Klient::Klient() : HOST("localhost")
 {
+	if (enet_initialize() != 0) {
+		printf("Could not initialize enet.\n");
+		//	return 0;
+	}
+	atexit(enet_deinitialize);
+	_client = enet_host_create(NULL, 1, 2, 5760 / 8, 1440 / 8);
+
+	if (_client == NULL) {
+		printf("Could not create client.\n");
+		//	return 0;
+	}
+
+	enet_address_set_host(&address, HOST.c_str());
+	address.port = PORT;
 }
 
 
@@ -15,65 +29,49 @@ Klient::~Klient()
 
 int Klient::Start()
 {
-	
-	//inicjalizacja
-	WSADATA wsaData;
-	int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (result != NO_ERROR)
-		printf("Initialization error.\n");
-	//koniec inicjalizacji
+	char buffer[50];
+	peer = enet_host_connect(_client, &address, 2, 0);
 
-	//utworzenie gniazda
-	SOCKET mainSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (mainSocket == INVALID_SOCKET)
-	{
-		printf("Error creating socket: %ld ---> KLIENT --->\n", WSAGetLastError());
-		WSACleanup();
-		return 1;
-	}
-	//koniec tworzenia gniazda
-
-	//ustalenie IP
-	sockaddr_in service;
-	memset(&service, 0, sizeof(service));
-	service.sin_family = AF_INET;
-	//service.sin_addr.s_addr = inet_addr("127.0.0.1");
-	//service.sin_port = htons(27015);
-	//koniec ustalania IP
-
-	if (connect(mainSocket, (SOCKADDR *)& service, sizeof(service)) == SOCKET_ERROR)
-	{
-		printf("Failed to connect. ---> KLIENT\n");
-		WSACleanup();
-		return 1;
+	if (peer == NULL) {
+		printf("Could not connect to server\n");
+		//	return 0;
 	}
 
-	int bytesSent;
-	int bytesRecv = SOCKET_ERROR;
-	char sendbuf[32] = "Client says hello!";
-	char recvbuf[32] = "";
-
-	bytesSent = send(mainSocket, sendbuf, strlen(sendbuf), 0);
-	printf("Bytes sent: %ld ---> KLIENT\n", bytesSent);
-
-	while (bytesRecv == SOCKET_ERROR)
+	ENetEvent event;
+	/* Wait up to 1000 milliseconds for an event. */
+	while (enet_host_service(_client, &event, 1000) > 0)
 	{
-		bytesRecv = recv(mainSocket, recvbuf, 32, 0);
-
-		if (bytesRecv == 0 || bytesRecv == WSAECONNRESET)
+		switch (event.type)
 		{
-			printf("Connection closed. ---> KLIENT\n");
+		case ENET_EVENT_TYPE_CONNECT:
+			printf("Connected to %x:%u.\n",
+				event.peer->address.host,
+				event.peer->address.port);
+			/* Store any relevant client information here. */
+			//event.peer->data = "Client information";
+			strncpy_s(buffer, "23345", BUFFERSIZE);
+			packet = enet_packet_create(buffer, strlen(buffer) + 1,
+				ENET_PACKET_FLAG_RELIABLE);
+			enet_peer_send(peer, 0, packet);
 			break;
+		case ENET_EVENT_TYPE_RECEIVE:
+			printf("A packet of length %u containing %s was received from %s on channel %u.\n",
+				event.packet->dataLength,
+				event.packet->data,
+				event.peer->data,
+				event.channelID);
+			/* Clean up the packet now that we're done using it. */
+			enet_packet_destroy(event.packet);
+
+			break;
+
+		case ENET_EVENT_TYPE_DISCONNECT:
+			printf("%s disconnected.\n", event.peer->data);
+			/* Reset the peer's client information. */
+			event.peer->data = NULL;
 		}
-
-		if (bytesRecv < 0)
-			return 1;
-
-		printf("Bytes received: %ld ---> KLIENT\n", bytesRecv);
-		printf("Received text: %s ---> KLIENT\n", recvbuf);
 	}
 
-	system("pause");
-
+	enet_host_destroy(_client);
 	return 0;
 }
