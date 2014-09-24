@@ -28,7 +28,8 @@ void Renderer::updateWindow()
 void Renderer::init()
 {
 	// EKRAN STARTOWY
-	this->screen = Screen::GameScreen;
+	//this->screen = Screen::GameScreen;
+	this->screen = Screen::MainMenuScreen;
 
 	this->win.width = 1024;
 	this->win.height = 640;
