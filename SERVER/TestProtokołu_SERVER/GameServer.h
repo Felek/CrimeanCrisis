@@ -2,22 +2,24 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <string>
-#include <sstream>
 #include <iostream>
+//#include <WinSock2.h>
+#include <thread>
+#include <string.h>
 #include <vector>
+#include <sstream>
 #include "enet/enet.h"
 
-using namespace std;
+#define BUFFERSIZE 50
 
-class Klient
+class GameServer
 {
 public:
-	Klient();
-	~Klient();
+	GameServer();
+	~GameServer();
 	int Start();
-	void FindServers();
-	void Send(char* data);
+	void Listen(ENetHost *server);
+	void SendToPeers(char* data);
 	void SendToBroadcast(char* data);
 	void Interpret(ENetPacket*);
 
@@ -25,15 +27,9 @@ private:
 	std::vector<std::string> Split(const std::string &s, char delim);
 	std::vector<std::string>& Split(const std::string &s, char delim, std::vector<std::string> &elems);
 
-	//SOCKET mainSocket;
-	ENetHost *_client;
-	ENetAddress  address;
-	ENetEvent  event;
-	ENetPeer  *peer;
-	string HOST;
+	SOCKET mainSocket;
+	ENetHost *server;
+	ENetAddress address;
 	const int PORT = 8032;
-	const int BUFFERSIZE = 50;
-	//vector<ENetAddress> _servers;
-	//vector<string> _servers;
 };
 

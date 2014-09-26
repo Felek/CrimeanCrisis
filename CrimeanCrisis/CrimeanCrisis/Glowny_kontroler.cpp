@@ -19,6 +19,7 @@ void Glowny_kontroler::Start()
 {
 	GraphicObject obj;	
 	obj.loadOBJ("models/megahuge_t1.obj", "grafiki/tex1.bmp");
+	//system("SERVER.exe");
 	RendController::init(_objects);
 	obj.SetDisplay();
 	_objects->push_back(obj);
